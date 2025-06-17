@@ -351,7 +351,7 @@
 
  -->
 
-
+<!-- 
  <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -626,6 +626,913 @@
             text = text.replace(/\n{3,}/g, '\n\n');
             return text.trim();
         }
+
+        function createMessage(content, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
+            const isNorwegian = /[æøåÆØÅ]/.test(content);
+            if (!isUser && isNorwegian) messageDiv.classList.add('rtl');
+            messageDiv.innerHTML = content.replace(/\n/g, '<br>');
+            chatMessages.appendChild(messageDiv);
+            chatMessages.appendChild(messagesEndRef);
+            messagesEndRef.scrollIntoView({ behavior: 'smooth' });
+            return messageDiv;
+        }
+
+        function showTyping() {
+            typingIndicator.classList.add('active');
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function hideTyping() {
+            typingIndicator.classList.remove('active');
+        }
+
+        async function handleSubmit() {
+            const prompt = promptInput.value.trim();
+            if (!prompt) return;
+
+            createMessage(prompt, true);
+
+            promptInput.value = '';
+            promptInput.style.height = 'auto';
+            sendButton.disabled = true;
+            sendButton.innerHTML = `<span style="font-size:18px;">...</span>`;
+            showTyping();
+
+            try {
+                let tmpPromptResponse = '';
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!response.body) throw new Error('No response body');
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'message ai-message';
+                chatMessages.appendChild(aiMessageDiv);
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value, { stream: true });
+                    tmpPromptResponse += chunk;
+                    aiMessageDiv.innerHTML = tmpPromptResponse.replace(/\n/g, '<br>');
+                    messagesEndRef.scrollIntoView({ behavior: 'smooth' });
+                }
+
+            } catch (error) {
+                createMessage('Sorry, there was an error connecting to the server.');
+            } finally {
+                sendButton.disabled = false;
+                sendButton.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>`;
+                hideTyping();
+                promptInput.focus();
+            }
+        }
+
+        window.addEventListener('load', () => { promptInput.focus(); });
+    </script>
+</body>
+</html>
+ -->
+
+
+
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hira Foods AI Assistant</title>
+    <style>
+        :root {
+            --hira-green: #3A5D23;
+            --hira-gold: #C9A13B;
+            --hira-beige: #F9F6F2;
+            --hira-brown: #4A2C18;
+            --bubble-radius: 18px;
+        }
+        html, body {
+            height: 100%;
+        }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--hira-beige) 60%, var(--hira-gold) 100%);
+            font-family: 'Segoe UI', 'Tahoma', Geneva, Verdana, sans-serif;
+            color: var(--hira-brown);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+        }
+        .chat-container {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 6px 24px rgba(58, 93, 35, 0.12);
+            width: 100%;
+            max-width: 420px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 2px solid var(--hira-gold);
+        }
+        .chat-header {
+            background: var(--hira-green);
+            color: var(--hira-gold);
+            padding: 18px 0 12px 0;
+            text-align: center;
+            border-bottom: 2px solid var(--hira-gold);
+        }
+        .chat-header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 2px;
+            letter-spacing: 1px;
+        }
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--hira-beige);
+        }
+        .online-dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background-color: #8BC34A;
+            border: 2px solid var(--hira-gold);
+        }
+        .quick-action-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            margin: 18px 0 0 0;
+        }
+        .quick-action-btn {
+            background: var(--hira-gold);
+            color: var(--hira-green);
+            border: none;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 1px 4px rgba(58, 93, 35, 0.07);
+            transition: background 0.2s;
+        }
+        .quick-action-btn:hover {
+            background: #e4c76a;
+        }
+        .chat-messages {
+            flex: 1;
+            padding: 18px 14px;
+            overflow-y: auto;
+            background: var(--hira-beige);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .message {
+            padding: 12px 16px;
+            border-radius: var(--bubble-radius);
+            max-width: 85%;
+            word-wrap: break-word;
+            font-size: 15px;
+            position: relative;
+            box-shadow: 0 1px 4px rgba(58, 93, 35, 0.07);
+        }
+        .user-message {
+            background: var(--hira-gold);
+            color: var(--hira-brown);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            text-align: right;
+        }
+        .ai-message {
+            background: #fff;
+            color: var(--hira-green);
+            border: 1px solid #e9ecef;
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+            text-align: left;
+        }
+        .ai-message.rtl {
+            text-align: right;
+            direction: rtl;
+        }
+        .chat-input-container {
+            padding: 14px;
+            background: #fff;
+            border-top: 2px solid var(--hira-gold);
+        }
+        .input-group {
+            display: flex;
+            gap: 8px;
+            align-items: flex-end;
+        }
+        #promptInput {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e9ecef;
+            border-radius: 20px;
+            font-size: 15px;
+            resize: none;
+            min-height: 40px;
+            max-height: 100px;
+            outline: none;
+            background: var(--hira-beige);
+            color: var(--hira-brown);
+        }
+        #promptInput::placeholder {
+            color: #999;
+            text-align: center;
+        }
+        #promptInput:focus {
+            border-color: var(--hira-gold);
+            background: #fff;
+        }
+        #sendButton {
+            background: var(--hira-green);
+            color: var(--hira-gold);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 500;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #sendButton:hover:not(:disabled) {
+            background: #2e471b;
+        }
+        #sendButton:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .typing-indicator {
+            display: none;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            border-radius: var(--bubble-radius);
+            background: #fff;
+            border: 1px solid #e9ecef;
+            max-width: 80%;
+            margin-right: auto;
+        }
+        .typing-indicator.active {
+            display: block;
+        }
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+        .typing-dots span {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: var(--hira-gold);
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        .typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(58,93,35,0.14);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #fff;
+            border-radius: 18px;
+            padding: 28px 22px 22px 22px;
+            min-width: 320px;
+            max-width: 95vw;
+            max-height: 93vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 32px rgba(58,93,35,0.19);
+            position: relative;
+            color: var(--hira-brown);
+        }
+        .modal-close {
+            position: absolute;
+            right: 18px;
+            top: 14px;
+            background: none;
+            border: none;
+            font-size: 22px;
+            color: var(--hira-gold);
+            cursor: pointer;
+        }
+        .lang-select {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+            justify-content: center;
+        }
+        .lang-btn {
+            background: var(--hira-green);
+            color: var(--hira-beige);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 14px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .lang-btn.active, .lang-btn:hover {
+            background: var(--hira-gold);
+            color: var(--hira-brown);
+        }
+        /* Menu Layout */
+        .menu-section {
+            margin-bottom: 18px;
+        }
+        .menu-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--hira-green);
+            margin-bottom: 10px;
+        }
+        .menu-items {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+        .menu-item {
+            background: var(--hira-beige);
+            border-radius: 10px;
+            padding: 9px 12px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 15px;
+        }
+        .menu-item .item-name {
+            font-weight: 500;
+        }
+        .menu-item .item-price {
+            color: var(--hira-gold);
+            font-weight: 600;
+            min-width: 55px;
+            text-align: right;
+        }
+        /* Cart Styles */
+        .cart-section {
+            margin-top: 18px;
+        }
+        .cart-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--hira-green);
+            margin-bottom: 8px;
+        }
+        .cart-items {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f5f5f5;
+            padding: 7px 10px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .cart-item .cart-qty {
+            margin: 0 6px;
+            font-weight: 600;
+        }
+        .cart-total {
+            font-weight: 700;
+            color: var(--hira-gold);
+            margin-bottom: 8px;
+        }
+        .cart-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+        .cart-btn {
+            background: var(--hira-green);
+            color: var(--hira-beige);
+            border: none;
+            border-radius: 14px;
+            padding: 7px 16px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .cart-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        /* Booking Form */
+        .booking-form label {
+            display: block;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+        .booking-form input, .booking-form select {
+            width: 100%;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        .booking-form button {
+            background: var(--hira-gold);
+            color: var(--hira-green);
+            border: none;
+            border-radius: 14px;
+            padding: 8px 18px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .booking-form button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        @media (max-width: 600px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                max-width: 100%;
+            }
+            .message {
+                max-width: 94%;
+            }
+            .modal-content {
+                min-width: 90vw;
+                padding: 18px 6vw 12px 6vw;
+            }
+        }
+        
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>Hira Foods AI Assistant</h1>
+            <div class="status-indicator">
+                <div class="online-dot"></div>
+                <span>Online</span>
+            </div>
+            <div class="quick-action-buttons">
+                <button class="quick-action-btn" id="multiStepBtn">Menu, Order &amp; Booking</button>
+            </div>
+        </div>
+        <div class="chat-messages" id="chatMessages">
+            <div class="ai-message message">
+                Welcome! How can I help you with Hira Foods today?<br>
+                <span style="font-size:12px;color:#C9A13B;">(You may ask in English or Norwegian)</span>
+            </div>
+        </div>
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <div class="input-group">
+                <textarea 
+                    id="promptInput" 
+                    rows="1"
+                    placeholder="Type your message in English or Norwegian..."
+                ></textarea>
+                <button id="sendButton">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M22 2L11 13" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                        <path d="M22 2L15 22L11 13L2 9L22 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-step Modal -->
+    <div class="modal" id="multiStepModal">
+        <div class="modal-content" id="multiStepContent">
+            <!-- Dynamic content goes here -->
+        </div>
+    </div>
+
+    <script>
+        // MENU DATA (English/Norwegian)
+        const menuData = {
+            en: {
+                nashta: [
+                    { name: "Tasting menu for 2 people", desc: "Halwa puri, nihari, haleem, 2 naan, 2 puris", price: 490 },
+                    { name: "Halwa puri", desc: "Potato stew, chana, sweet semolina, 1 puri", price: 159 },
+                    { name: "Paye", desc: "Lamb/cow hoof stew, naan", price: 189 },
+                    { name: "Nihari", desc: "Beef stew, naan", price: 169 },
+                    { name: "Haleem", desc: "Lamb & lentil stew, naan", price: 169 },
+                    { name: "Andha Paratha", desc: "Omelette with spices, paratha", price: 109 },
+                    { name: "Aloo Paratha", desc: "Potato paratha, mint sauce", price: 109 },
+                    { name: "Saag Paratha", desc: "Greens stew, paratha", price: 149 },
+                    { name: "Kheer", desc: "Rice pudding", price: 79 },
+                    { name: "Desi Chai", desc: "Spiced tea", price: 49 },
+                    { name: "Lassi", desc: "Sweet, salty, or mango", price: 59 }
+                ],
+                catering: [
+                    {
+                        name: "CATERING PACKAGE 1",
+                        price: 199,
+                        details: [
+                            "A curry/salad: Morg Korma (chicken), Ghost Korma (mutton), Cabbage Meat",
+                            "One vegetarian dish: Chane (chickpeas), Palak Paneer (spinach & feta)",
+                            "One rice dish: Sabzi Palao (vegetable), Zera Palao (spiced)",
+                            "With the food: Alo Bahara Chatni (plum), Podina Chatni (mint), Naan, Salad",
+                            "One dessert: Kheer (rice pudding), Matanjan (sweet rice with nuts)"
+                        ]
+                    },
+                    {
+                        name: "CATERING PACKAGE 2",
+                        price: 259,
+                        details: [
+                            "Two curries: Morg Korma, Ghost Korma, Cabbage Meat, Jalfarezi (chicken & veg), Deghi Kebab (veg kebab)",
+                            "One vegetarian dish: Chane, Palak Paneer",
+                            "One rice dish: Sabzi Palao, Zera Palao",
+                            "With the food: Alo Bahara Chatni, Podina Chatni, Naan, Salad",
+                            "One dessert: Kheer, Matanjan, Gajar Ka Halwa (carrot pudding)"
+                        ]
+                    },
+                    {
+                        name: "CATERING PACKAGE 3",
+                        price: 309,
+                        details: [
+                            "A grilled dish: Morg Rost (lemon chicken), Tali Hoi Machli (fried cod), Seekh Kebab (minced lamb/chicken)",
+                            "Two curries: Morg Korma, Ghost Korma, Cabbage Meat, Deghi Kebab, Jalfarezi",
+                            "One vegetarian dish: Chane, Palak Paneer",
+                            "One rice dish: Sabzi Palao, Zera Palao",
+                            "With the food: Alo Bakhara Chatni, Podina Chatni, Naan, Salad",
+                            "One dessert: Kheer, Matanjan, Gajar Ka Halwa, Gulab Jaman (milk buns in syrup)"
+                        ]
+                    },
+                    {
+                        name: "CATERING PACKAGE 4",
+                        price: 449,
+                        details: [
+                            "Three grilled dishes: Lamb roast, Tali Hoi Machli, Morg Tikka (chicken skewers)",
+                            "Three curries: Ghost Korma, Cabbage Meat, Jalfarezi, Deghi Kebab",
+                            "One vegetarian dish: Chane, Palak Paneer",
+                            "One rice dish: Sabzi Palao, Zera Palao",
+                            "With the food: Alo Bahara Chatni, Podina Chatni, Naan, Salad",
+                            "Two desserts: Kheer, Matanjan, Gajar Ka Halwa, Gulab Jaman"
+                        ]
+                    }
+                ],
+                allergens: "Allergens & other notes: 1 Gluten, 2 Shellfish, 3 Eggs, 4 Fish, 5 Peanuts, 6 Soybean, 7 Milk, 8 Nuts, 9 Celery, 10 Mustard, 11 Sesame seeds, 12 Sulfur dioxide and sulfites, 13 Lupine, 14 Mollusks"
+            },
+            no: {
+                nashta: [
+                    { name: "Smaksmeny for 2 personer", desc: "Halwa puri, nihari, haleem, 2 naan, 2 puris", price: 490 },
+                    { name: "Halwa puri", desc: "Potetgryte, kikerter, søt semulegryn, 1 puri", price: 159 },
+                    { name: "Paye", desc: "Lam/okse-fotgryte, naan", price: 189 },
+                    { name: "Nihari", desc: "Oksegryte, naan", price: 169 },
+                    { name: "Haleem", desc: "Lam- og linsegryte, naan", price: 169 },
+                    { name: "Andha Paratha", desc: "Omelett med krydder, paratha", price: 109 },
+                    { name: "Aloo Paratha", desc: "Potet-paratha, myntesaus", price: 109 },
+                    { name: "Saag Paratha", desc: "Grønn grønnsaksgryte, paratha", price: 149 },
+                    { name: "Kheer", desc: "Rispudding", price: 79 },
+                    { name: "Desi Chai", desc: "Krydret te", price: 49 },
+                    { name: "Lassi", desc: "Søt, salt eller mango", price: 59 }
+                ],
+                catering: [
+                    {
+                        name: "CATERINGPAKKE 1",
+                        price: 199,
+                        details: [
+                            "En curry/salat: Morg Korma (kylling), Ghost Korma (lam), Kål og kjøtt",
+                            "En vegetarrett: Chane (kikerter), Palak Paneer (spinat & feta)",
+                            "En risrett: Sabzi Palao (grønnsaker), Zera Palao (krydret)",
+                            "Til maten: Alo Bahara Chatni (plomme), Podina Chatni (mynte), Naan, Salat",
+                            "En dessert: Kheer (rispudding), Matanjan (søt ris med nøtter)"
+                        ]
+                    },
+                    {
+                        name: "CATERINGPAKKE 2",
+                        price: 259,
+                        details: [
+                            "To curryretter: Morg Korma, Ghost Korma, Kål og kjøtt, Jalfarezi (kylling & grønnsaker), Deghi Kebab (vegetarkebab)",
+                            "En vegetarrett: Chane, Palak Paneer",
+                            "En risrett: Sabzi Palao, Zera Palao",
+                            "Til maten: Alo Bahara Chatni, Podina Chatni, Naan, Salat",
+                            "En dessert: Kheer, Matanjan, Gajar Ka Halwa (gulrotpudding)"
+                        ]
+                    },
+                    {
+                        name: "CATERINGPAKKE 3",
+                        price: 309,
+                        details: [
+                            "En grillrett: Morg Rost (sitronkylling), Tali Hoi Machli (stekt torsk), Seekh Kebab (kvernet lam/kylling)",
+                            "To curryretter: Morg Korma, Ghost Korma, Kål og kjøtt, Deghi Kebab, Jalfarezi",
+                            "En vegetarrett: Chane, Palak Paneer",
+                            "En risrett: Sabzi Palao, Zera Palao",
+                            "Til maten: Alo Bakhara Chatni, Podina Chatni, Naan, Salat",
+                            "En dessert: Kheer, Matanjan, Gajar Ka Halwa, Gulab Jaman (melboller i sirup)"
+                        ]
+                    },
+                    {
+                        name: "CATERINGPAKKE 4",
+                        price: 449,
+                        details: [
+                            "Tre grillretter: Lammefilet, Tali Hoi Machli, Morg Tikka (kyllingspyd)",
+                            "Tre curryretter: Ghost Korma, Kål og kjøtt, Jalfarezi, Deghi Kebab",
+                            "En vegetarrett: Chane, Palak Paneer",
+                            "En risrett: Sabzi Palao, Zera Palao",
+                            "Til maten: Alo Bahara Chatni, Podina Chatni, Naan, Salat",
+                            "To desserter: Kheer, Matanjan, Gajar Ka Halwa, Gulab Jaman"
+                        ]
+                    }
+                ],
+                allergens: "Allergener og andre notater: 1 Gluten, 2 Skalldyr, 3 Egg, 4 Fisk, 5 Peanøtter, 6 Soyabønner, 7 Melk, 8 Nøtter, 9 Selleri, 10 Sennep, 11 Sesamfrø, 12 Svoveldioksid og sulfitter, 13 Lupin, 14 Bløtdyr"
+            }
+        };
+
+        // Modal multi-step logic
+        let currentStep = 0;
+        let chosenLang = 'en';
+        let chosenType = null;
+        let cart = [];
+
+        document.getElementById('multiStepBtn').onclick = function() {
+            openModal('multiStepModal');
+            currentStep = 0;
+            chosenLang = 'en';
+            chosenType = null;
+            cart = [];
+            renderStep();
+        };
+
+        function openModal(id) {
+            document.getElementById(id).classList.add('active');
+        }
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        function renderStep() {
+            const content = document.getElementById('multiStepContent');
+            let html = '';
+            // Step 0: Language selection with close button
+            if (currentStep === 0) {
+                html += `
+                    <button class="modal-close" onclick="closeModal('multiStepModal')">&times;</button>
+                    <div style="text-align:center;font-size:18px;font-weight:600;margin-bottom:18px;">Choose language / Velg språk</div>
+                    <div class="lang-select">
+                        <button class="lang-btn${chosenLang==='en'?' active':''}" onclick="setLang('en')">English</button>
+                        <button class="lang-btn${chosenLang==='no'?' active':''}" onclick="setLang('no')">Norsk</button>
+                    </div>
+                    <div style="text-align:center;margin-top:22px;">
+                        <button class="quick-action-btn" onclick="nextStep()">${chosenLang==='en'?'Continue':'Fortsett'}</button>
+                    </div>`;
+            }
+            // Step 1: Delivery or Booking
+            else if (currentStep === 1) {
+                html += `<div style="text-align:center;font-size:18px;font-weight:600;margin-bottom:18px;">
+                    ${chosenLang==='en'?'Choose an option':'Velg et alternativ'}
+                </div>
+                <div style="display:flex;gap:20px;justify-content:center;margin-bottom:18px;">
+                    <button class="quick-action-btn" onclick="setType('delivery')">${chosenLang==='en'?'Delivery':'Levering'}</button>
+                    <button class="quick-action-btn" onclick="setType('booking')">${chosenLang==='en'?'Booking':'Bordbestilling'}</button>
+                </div>
+                <div style="text-align:center;">
+                    <button class="cart-btn" onclick="prevStep()">&larr; ${chosenLang==='en'?'Back':'Tilbake'}</button>
+                </div>`;
+            }
+            // Step 2: Delivery (Menu + Cart)
+            else if (currentStep === 2 && chosenType === 'delivery') {
+                html += `<div class="menu-section">
+                    <div class="menu-title">${chosenLang==='en'?'Nashta Menu':'Nashta-meny'}</div>
+                    <div class="menu-items">
+                        ${menuData[chosenLang].nashta.map(item => `
+                            <div class="menu-item" style="flex-direction:column;align-items:flex-start;">
+                                <div>
+                                    <span class="item-name">${item.name}</span>
+                                    <span class="item-price" style="float:right;margin-left:12px;">${item.price} kr</span>
+                                    <button class="cart-btn" style="padding:4px 10px;font-size:13px;float:right;margin-left:12px" onclick="addToCart('${item.name.replace(/'/g,"\\'")}',${item.price})">${chosenLang==='en'?'Add':'Legg til'}</button>
+                                </div>
+                                <div style="font-size:13px;color:#888;">${item.desc}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="menu-section">
+                    <div class="menu-title">${chosenLang==='en'?'Catering Packages':'Cateringpakker'}</div>
+                    <div class="menu-items">
+                        ${menuData[chosenLang].catering.map(pkg => `
+                            <div class="menu-item" style="flex-direction:column;align-items:flex-start;">
+                                <div>
+                                    <span class="item-name">${pkg.name}</span>
+                                    <span class="item-price" style="float:right;margin-left:12px;">${pkg.price} kr</span>
+                                    <button class="cart-btn" style="padding:4px 10px;font-size:13px;float:right;margin-left:12px" onclick="addToCart('${pkg.name.replace(/'/g,"\\'")}',${pkg.price})">${chosenLang==='en'?'Add':'Legg til'}</button>
+                                </div>
+                                <ul style="margin:7px 0 0 12px;padding-left:14px;color:#666;font-size:13px;">
+                                    ${pkg.details.map(line => `<li>${line}</li>`).join('')}
+                                </ul>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="font-size:12px;color:#b28f2c;margin-bottom:12px;">
+                    ${menuData[chosenLang].allergens}
+                </div>
+                <div class="cart-section">
+                    <div class="cart-title">${chosenLang==='en'?'Your Cart':'Handlekurv'}</div>
+                    <div class="cart-items" id="cartItems"></div>
+                    <div class="cart-total" id="cartTotal"></div>
+                    <div class="cart-actions">
+                        <button class="cart-btn" id="checkoutBtn" onclick="checkoutCart()" disabled>${chosenLang==='en'?'Checkout':'Fullfør bestilling'}</button>
+                        <button class="cart-btn" onclick="resetCart()">${chosenLang==='en'?'Clear Cart':'Tøm handlekurv'}</button>
+                        <button class="cart-btn" onclick="prevStep()">&larr; ${chosenLang==='en'?'Back':'Tilbake'}</button>
+                    </div>
+                </div>
+                `;
+            }
+            // Step 2: Booking
+            else if (currentStep === 2 && chosenType === 'booking') {
+                html += `<form class="booking-form" onsubmit="submitBooking(event)">
+                    <label for="name">${chosenLang==='en'?'Name':'Navn'}</label>
+                    <input type="text" id="bookingName" required>
+                    <label for="email">Email</label>
+                    <input type="email" id="bookingEmail" required>
+                    <label for="phone">${chosenLang==='en'?'Phone':'Telefon'}</label>
+                    <input type="tel" id="bookingPhone" required>
+                    <label for="date">${chosenLang==='en'?'Booking Date':'Dato'}</label>
+                    <input type="date" id="bookingDate" required>
+                    <label for="guests">${chosenLang==='en'?'Number of Guests':'Antall personer'}</label>
+                    <input type="number" id="bookingGuests" min="1" required>
+                    <label for="cateringOptions">Catering options</label>
+<select id="cateringOptions" name="cateringOptions" required>
+  <option value="">Select an option</option>
+  <option value="catering1">Catering 1</option>
+  <option value="catering2">Catering 2</option>
+  <option value="catering3">Catering 3</option>
+  <option value="catering4">Catering 4</option>
+</select>
+                    <button type="submit">${chosenLang==='en'?'Submit Booking':'Send bestilling'}</button>
+                    <button type="button" class="cart-btn" style="margin-left:12px;" onclick="prevStep()">&larr; ${chosenLang==='en'?'Back':'Tilbake'}</button>
+                </form>
+                `;
+            }
+            content.innerHTML = html;
+            if (currentStep === 2 && chosenType === 'delivery') renderCart();
+        }
+
+        function setLang(lang) {
+            chosenLang = lang;
+            renderStep();
+        }
+        function setType(type) {
+            chosenType = type;
+            currentStep = 2;
+            renderStep();
+        }
+        function nextStep() {
+            currentStep++;
+            renderStep();
+        }
+        function prevStep() {
+            currentStep--;
+            renderStep();
+        }
+
+        // Cart logic
+        function addToCart(name, price) {
+            let found = cart.find(item => item.name === name);
+            if (found) found.qty++;
+            else cart.push({ name, price, qty: 1 });
+            renderCart();
+        }
+        function removeFromCart(name) {
+            cart = cart.filter(item => item.name !== name);
+            renderCart();
+        }
+        function changeQty(name, delta) {
+            let item = cart.find(i => i.name === name);
+            if (item) {
+                item.qty += delta;
+                if (item.qty < 1) item.qty = 1;
+                renderCart();
+            }
+        }
+        function resetCart() {
+            cart = [];
+            renderCart();
+        }
+        function renderCart() {
+            const cartItems = document.getElementById('cartItems');
+            if (!cartItems) return;
+            if (cart.length === 0) {
+                cartItems.innerHTML = `<span style="color:#888;">${chosenLang==='en'?'Cart is empty.':'Handlekurven er tom.'}</span>`;
+                document.getElementById('checkoutBtn').disabled = true;
+                document.getElementById('cartTotal').innerText = `${chosenLang==='en'?'Total':'Totalt'}: 0 kr`;
+                return;
+            }
+            cartItems.innerHTML = cart.map(item => `
+                <div class="cart-item">
+                    <span>${item.name}</span>
+                    <span>
+                        <button class="cart-btn" style="padding:2px 8px;" onclick="changeQty('${item.name.replace(/'/g,"\\'")}',-1)">-</button>
+                        <span class="cart-qty">${item.qty}</span>
+                        <button class="cart-btn" style="padding:2px 8px;" onclick="changeQty('${item.name.replace(/'/g,"\\'")}',1)">+</button>
+                        <span style="margin-left:8px;">${item.price * item.qty} kr</span>
+                        <button class="cart-btn" style="padding:2px 8px;background:#b23c3c;color:#fff;margin-left:8px;" onclick="removeFromCart('${item.name.replace(/'/g,"\\'")}')">&times;</button>
+                    </span>
+                </div>
+            `).join('');
+            let total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+            document.getElementById('cartTotal').innerText = `${chosenLang==='en'?'Total':'Totalt'}: ${total} kr`;
+            document.getElementById('checkoutBtn').disabled = false;
+        }
+        function checkoutCart() {
+            alert(chosenLang==='en'?'Order placed! (Demo only)':'Bestilling sendt! (Demo)');
+            resetCart();
+        }
+
+        // Booking form
+        function submitBooking(e) {
+            e.preventDefault();
+            // document.querySelector('.booking-form').style.display = 'none';
+            // document.getElementById('bookingSuccess').style.display = 'block';
+            
+            alert(chosenLang==='en'?'Booking placed! (Demo only)':'bestilling fullført (kun demo)');
+            location.reload();  
+        }
+
+        // Make functions global for inline HTML
+        window.setLang = setLang;
+        window.setType = setType;
+        window.nextStep = nextStep;
+        window.prevStep = prevStep;
+        window.addToCart = addToCart;
+        window.removeFromCart = removeFromCart;
+        window.changeQty = changeQty;
+        window.resetCart = resetCart;
+        window.checkoutCart = checkoutCart;
+        window.submitBooking = submitBooking;
+        window.closeModal = closeModal;
+
+        // Close modal on Escape
+        window.addEventListener('keydown', function(e) {
+            if (e.key === "Escape") {
+                closeModal('multiStepModal');
+            }
+        });
+
+        // --- Existing chat functionality (from your code) ---
+        const API_URL = 'https://hinabackend-production.up.railway.app/api/prompt';
+        const chatMessages = document.getElementById('chatMessages');
+        const promptInput = document.getElementById('promptInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const messagesEndRef = document.createElement('div');
+
+        promptInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 100) + 'px';
+        });
+
+        promptInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+            }
+        });
+
+        sendButton.addEventListener('click', handleSubmit);
 
         function createMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
