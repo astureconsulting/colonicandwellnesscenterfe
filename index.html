@@ -1562,14 +1562,24 @@ sendButton.addEventListener('click', handleSubmit);
 function createMessage(content, isUser = false) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${isUser ? 'user-message' : 'ai-message'}`;
-    const isNorwegian = /[æøåÆØÅ]/.test(content);
-    if (!isUser && isNorwegian) messageDiv.classList.add('rtl');
+
+    // Detect real RTL languages only (Arabic, Urdu, Hebrew etc.)
+    const isRTL = /[\u0600-\u06FF\u0750-\u077F\u0590-\u05FF]/.test(content);
+    if (!isUser && isRTL) {
+        messageDiv.style.direction = "rtl";
+        messageDiv.style.textAlign = "right";
+    } else {
+        messageDiv.style.direction = "ltr";
+        messageDiv.style.textAlign = "left";
+    }
+
     messageDiv.innerHTML = content.replace(/\n/g, '<br>');
     chatMessages.appendChild(messageDiv);
     chatMessages.appendChild(messagesEndRef);
     messagesEndRef.scrollIntoView({ behavior: 'smooth' });
     return messageDiv;
 }
+
 
 function showTyping() {
     typingIndicator.classList.add('active');
