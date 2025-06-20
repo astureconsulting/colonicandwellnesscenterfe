@@ -1579,13 +1579,11 @@ function showTyping() {
 function hideTyping() {
     typingIndicator.classList.remove('active');
 }
-
 async function handleSubmit() {
     const prompt = promptInput.value.trim();
     if (!prompt) return;
 
     createMessage(prompt, true);
-
     promptInput.value = '';
     promptInput.style.height = 'auto';
     sendButton.disabled = true;
@@ -1593,29 +1591,14 @@ async function handleSubmit() {
     showTyping();
 
     try {
-        let tmpPromptResponse = '';
         const response = await fetch(API_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ message: prompt }) // 👈 match Flask 'message' key
         });
 
-        if (!response.body) throw new Error('No response body');
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        const aiMessageDiv = document.createElement('div');
-        aiMessageDiv.className = 'message ai-message';
-        chatMessages.appendChild(aiMessageDiv);
-
-        while (true) {
-            const { value, done } = await reader.read();
-            if (done) break;
-            const chunk = decoder.decode(value, { stream: true });
-            tmpPromptResponse += chunk;
-            aiMessageDiv.innerHTML = tmpPromptResponse.replace(/\n/g, '<br>');
-            messagesEndRef.scrollIntoView({ behavior: 'smooth' });
-        }
+        const data = await response.json();
+        createMessage(data.response, false); // 👈 use 'data.response' from Flask
 
     } catch (error) {
         createMessage('Sorry, there was an error connecting to the server.');
@@ -1629,6 +1612,7 @@ async function handleSubmit() {
         promptInput.focus();
     }
 }
+
 
 window.addToCart = addToCart;
 window.removeFromCart = removeFromCart;
