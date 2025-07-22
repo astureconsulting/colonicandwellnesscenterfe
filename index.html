@@ -709,204 +709,229 @@
 <head>
     <meta charset="UTF-8">
     <title>WeBring AI Assistant</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=420, user-scalable=no">
     <style>
         :root {
             --webring-yellow: #FFD600;
             --webring-black: #222;
-            --webring-bg: #F4F4F4;
-            --webring-gray: #555;
-            --user-bubble-bg: #FFF9C4;
-            --bot-bubble-bg: #222;
-            --bot-bubble-color: #fff;
+            --webring-bg: #f4f4f4;
+            --meta-grey: #8e8e8e;
             --border-radius: 18px;
         }
-        html, body {height: 100%; }
         body {
-            min-height: 100vh;
-            background: var(--webring-bg);
-            font-family: 'Segoe UI', 'Tahoma', Geneva, Verdana, sans-serif;
+            background: #736a65;
+            font-family: 'Segoe UI', 'Roboto', 'Tahoma', Geneva, Verdana, sans-serif;
             color: var(--webring-black);
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            margin: 0;
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh;
         }
-        .chat-container {
+        .chat-outer {
             background: #fff;
+            padding: 0;
             border-radius: var(--border-radius);
-            box-shadow: 0 6px 24px rgba(58,93,35,0.09);
-            width: 100%;
-            max-width: 410px;
-            height: 600px;
-            display: flex;
-            flex-direction: column;
-            border: 1.5px solid var(--webring-yellow);
+            box-shadow: 0 7px 32px 0 rgba(34,34,34,.17);
+            width: 370px; max-width: calc(100vw - 12px);
+            height: 610px; display:flex; flex-direction:column;
             overflow: hidden;
         }
         .chat-header {
             background: var(--webring-yellow);
             color: var(--webring-black);
-            padding: 14px 0 10px 0;
-            text-align: left;
-            border-bottom: 1.5px solid #fffbe5;
-            font-weight: 700;
-            letter-spacing: 0.5px;
+            padding: 18px 0 12px 22px;
+            min-height: 44px;
             display: flex;
             align-items: center;
-            position: relative;
-        }
-        .chat-header h1 {
-            font-size: 20px;
             font-weight: 700;
-            padding-left: 22px;
-            margin: 0;
-            flex: 1;
-            user-select: none;
+            font-size: 19px;
+            position: relative;
+            letter-spacing: .5px;
         }
         .chat-header .close {
-            position: absolute;
-            right: 13px; top: 13px;
-            font-size: 23px; 
-            color: #666;
-            background: none;
-            border: none;
-            cursor: pointer;
+            position: absolute; right: 18px; top: 13px;
+            font-size: 27px; 
+            color: #333; background: none; border: none; cursor:pointer;
+            line-height:1;
         }
         .chat-messages {
-            flex: 1;
-            padding: 20px 14px;
+            flex: 1; background: #fff;
+            padding: 0 0 0 0;  /* full width messages */
             overflow-y: auto;
-            background: #fff;
+            display: flex; flex-direction: column;
+        }
+        .chat-date-row {
+            text-align: center;
+            font-size: 13px;
+            color: var(--meta-grey);
+            margin: 20px 0 14px 0;
+            font-weight: 400;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 14px;
+        }
+        .chat-date-row span {
+            background: #eee5bf;
+            border-radius: 12px;
+            padding: 3px 14px;
+            font-size: 13px;
+            color: #756400;
+            font-weight:500;
         }
         .message-row {
             display: flex;
             align-items: flex-end;
-            margin-bottom: 8px;
+            margin-bottom: 14px;
+            margin-left: 13px; margin-right: 13px;
         }
-        .avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background: #ddd;
-            margin-right: 7px;
+        /* Bot row: avatar left, bubble right */
+        .message-row.bot {
+            flex-direction: row;
+            justify-content: flex-start;
         }
-        .avatar.user {
-            margin-left: 7px; margin-right: 0;
-        }
-        .message {
-            padding: 13px 18px;
-            border-radius: var(--border-radius);
-            max-width: 77%;
-            font-size: 15px;
-            word-break: break-word;
-            box-shadow: 0 1px 4px rgba(34,34,34,0.06);
-            line-height: 1.55;
+        .avatar-bot {
+            width: 33px; height:33px;
+            border-radius: 100%;
+            object-fit: cover;
+            background: #fff;
+            margin-right: 8px;
+            border:1.5px solid #FFD600;
         }
         .message.bot {
-            background: var(--bot-bubble-bg);
-            color: var(--bot-bubble-color);
-            margin-right: auto;
+            background: #222;
+            color: #fff;
+            border-radius: var(--border-radius);
             border-bottom-left-radius: 6px;
+            padding: 14px 19px 13px 19px;
+            max-width: 72%;
+            font-size: 15px;
+            margin-right: auto;
+            white-space: pre-line;
+            word-break: break-word;
+            box-shadow: 0 1px 5px rgba(30,30,30,0.06);
+            display: flex;
+            flex-direction: column;
+        }
+        /* User row: avatar right, bubble left */
+        .message-row.user {
+            flex-direction: row-reverse;
+            justify-content: flex-end;
+        }
+        .avatar-user {
+            width: 33px; height:33px;
+            border-radius: 100%;
+            object-fit: cover;
+            background: #fffbe3;
+            margin-left: 8px;
+            border:1.5px solid #FFD600;
         }
         .message.user {
-            background: var(--user-bubble-bg);
-            color: var(--webring-black);
-            margin-left: auto;
-            border-bottom-right-radius: 6px;
-            text-align: right;
-        }
-        .message-meta {
-            font-size: 12px; color: #999;
-            margin-top: 3px;
-            margin-bottom: 0;
-            padding: 0 4px;
-        }
-        .typing-indicator {
-            display: none;
-            padding: 9px 14px;
-            margin-bottom: 10px;
+            background: #fffbe9;
+            color: #222;
             border-radius: var(--border-radius);
-            background: #f8f8f8;
-            border: 1px solid #eee;
-            color: #888;
-            margin-right: auto;
-            margin-left: 0;
-            font-size: 14px;
+            border-bottom-right-radius: 6px;
+            padding: 14px 18px 13px 19px;
+            max-width: 72%;
+            font-size: 15px;
+            margin-left: auto;
+            white-space: pre-line;
+            word-break: break-word;
+            box-shadow: 0 2px 6px rgba(255,214,0,0.07);
         }
-        .typing-indicator.active {
-            display: inline-block;
+        .meta-row, .meta-row-user {
+            font-size: 13px;
+            color: var(--meta-grey);
+            margin-bottom: 3px;
+            font-weight: 500;
+            margin-top:-9px;
+            display:flex; align-items:center; gap:7px;
+            letter-spacing:.1px;
         }
+        .meta-row-user { justify-content: flex-end; margin-right: 3px;}
+        .meta-row { margin-left: 4px;}
+        .meta-bot { font-weight:600;}
+        .meta-user { font-weight:600;}
+        .typing-indicator {
+            display: none; color: #888; font-size:15px; margin: 7px 23px 2px 23px;
+            background:#fffbe7; padding: 9px 15px;
+            border-radius: 12px;
+            border:1px solid #eeeac9;
+            width:max-content;
+        }
+        .typing-indicator.active { display:block; }
         .chat-input-container {
-            padding: 10px 12px;
-            background: #fff;
-            border-top: 1.5px solid var(--webring-yellow);
+            background:#fff;
+            border-top: 1.5px solid #FFD600;
+            padding: 14px 11px 14px 13px;
         }
         .input-group {
-            display: flex;
-            gap: 8px;
-            align-items: flex-end;
+            display: flex; gap: 8px; align-items: flex-end;
+            position:relative;
         }
         #promptInput {
             flex: 1;
-            padding: 12px 16px;
-            border: 1.5px solid #ececec;
-            border-radius: 20px;
+            padding: 15px 17px;
+            border: 1.5px solid #e8e0b7;
+            border-radius: 18px;
             font-size: 15px;
-            min-height: 40px;
-            max-height: 80px;
+            min-height: 20px;
+            max-height: 90px;
             outline: none;
-            background: #f8f8f8;
-            color: var(--webring-black);
+            background: #fffbe7;
+            color: #222;
             resize: none;
-            transition: border 0.18s, background 0.15s;
-        }
-        #promptInput::placeholder {
-            color: #979797;
+            box-shadow: 0 1px 5px rgba(255,214,0,0.08);
+            transition: border 0.16s, background 0.17s, box-shadow 0.12s;
         }
         #promptInput:focus {
-            border-color: var(--webring-yellow);
-            background: #fffbe5;
+            border-color: #FFD600;
+            background: #fffdeeea;
+            box-shadow: 0 0 0 2.5px #fffab15e;
+        }
+        #promptInput::placeholder {
+            color: #bcb388; opacity:.96;
+            font-size: 14px;
         }
         #sendButton {
             background: var(--webring-yellow);
-            color: var(--webring-black);
+            color: #222;
             border: none;
-            padding: 12px 19px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 17px;
-            font-weight: 600;
-            transition: background 0.18s, color 0.18s;
+            padding: 7px 12px 8px 12px;
+            border-radius: 16px;
+            font-size: 19px;
+            font-weight: 700;
             display: flex;
             align-items: center;
-            box-shadow: 0 2px 8px rgba(58,93,35,0.06);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(255,214,0,0.10);
+            margin-left: 4px;
+            transition: background 0.12s, color 0.18s;
+            outline:none;
+        }
+        #sendButton:active, #sendButton:focus {
+            background: #ffec80;
+            color: #101010;
+            box-shadow: 0 1px 10px #FFD60044;
         }
         #sendButton:disabled {
-            opacity: 0.5;
+            opacity: 0.6;
             cursor: not-allowed;
         }
-        #sendButton:hover:not(:disabled),
-        #sendButton:focus:not(:disabled) {
-            background: #ffec80;
-            color: #111;
-        }
-        @media (max-width: 650px) {
-            .chat-container { height: 100vh; border-radius: 0; max-width: 100%; }
-            .message { max-width: 90vw; }
+        /* Hide scrollbar and make responsive */
+        .chat-messages::-webkit-scrollbar { display:none; }
+        @media (max-width:470px) {
+            .chat-outer { max-width:100vw; width:100vw; height:100vh;}
         }
     </style>
 </head>
 <body>
-<div class="chat-container">
+<div class="chat-outer">
     <div class="chat-header">
-        <h1>Welcome to WeBring AI Assistant</h1>
+        Welcome to WeBring AI Assistant
         <button class="close" title="Close" onclick="window.location.reload()">&times;</button>
     </div>
     <div class="chat-messages" id="chatMessages"></div>
-    <div class="typing-indicator" id="typingIndicator">
-        WeBring Bot is typing...
-    </div>
+    <div class="typing-indicator" id="typingIndicator">WeBring Bot is typing...</div>
     <div class="chat-input-container">
         <div class="input-group">
             <textarea 
@@ -925,93 +950,84 @@
     </div>
 </div>
 <script>
-const API_URL = 'https://webringbotbe-production.up.railway.app/chat'; // Set to your Flask backend endpoint
-const BOT_AVATAR = 'https://webring.ltd/assets/bot-avatar.png'; // Use your company's logo or bot avatar
-const USER_AVATAR = 'https://ui-avatars.com/api/?name=User&background=FFD600&color=222'; // Placeholder
+// ==== AVATARS (replace with your own) ====
+const BOT_AVATAR = "https://ui-avatars.com/api/?name=WB&background=222&color=FFD600&rounded=true";
+const USER_AVATAR = "https://ui-avatars.com/api/?name=U&background=FFD600&color=222&rounded=true";
 
+// ==== DYNAMIC PARTS ====
 const chatMessages = document.getElementById('chatMessages');
-const promptInput = document.getElementById('promptInput');
-const sendButton = document.getElementById('sendButton');
+const promptInput  = document.getElementById('promptInput');
+const sendButton   = document.getElementById('sendButton');
 const typingIndicator = document.getElementById('typingIndicator');
-const messagesEndRef = document.createElement('div'); // for auto-scroll
+const messagesEndRef = document.createElement('div');
+const API_URL = 'https://hinabackend-production.up.railway.app/chat'; // Update for your backend
 
-let isFirstMessage = true;
+// ==== DATES & UTIL ====
+function getDisplayDate() {
+    const d = new Date();
+    const day = d.toLocaleDateString(undefined, {weekday:"long"});
+    const date = d.toLocaleDateString(undefined, {year:"numeric", month: "2-digit", day: "2-digit"});
+    return {day, date};
+}
+function minutesAgo(minutes=12) { return `${minutes} Min ago`; } // or dynamic if you want
 
+// ==== RENDER ====
+function renderDateRow() {
+    const {day, date} = getDisplayDate();
+    const dateRow = document.createElement("div");
+    dateRow.className = "chat-date-row";
+    dateRow.innerHTML = `<span>${day}</span> | <span>${date}</span>`;
+    chatMessages.appendChild(dateRow);
+}
+
+// ------ Bubble rendering (with meta: "WeBring Bot | 12 Min ago" or "You | 12 Min ago") ------
 function createMessage(content, isUser = false, metaText = "") {
-    const msgRow = document.createElement('div');
-    msgRow.className = 'message-row';
+    const row = document.createElement('div');
+    row.className = "message-row " + (isUser?"user":"bot");
+    // Meta
+    const meta = document.createElement('div');
+    meta.className = isUser?"meta-row-user":"meta-row";
+    meta.innerHTML = `<span class="${isUser?'meta-user':'meta-bot'}">${isUser?'You':'WeBring Bot'}</span> | <span>${metaText}</span>`;
+
     // Avatar
     const avatar = document.createElement('img');
-    avatar.className = 'avatar' + (isUser ? ' user' : '');
+    avatar.className = isUser ? "avatar-user" : "avatar-bot";
     avatar.src = isUser ? USER_AVATAR : BOT_AVATAR;
-    avatar.alt = isUser ? "You" : "Bot";
-    avatar.loading = "lazy";
-    avatar.width = 36; avatar.height = 36;
-
+    avatar.alt = isUser ? "You" : "WeBring Bot";
     // Message bubble
-    const msgDiv = document.createElement('div');
-    msgDiv.className = `message ${isUser ? 'user' : 'bot'}`;
-    msgDiv.innerHTML = content.replace(/\n/g, "<br>");
+    const msg = document.createElement('div');
+    msg.className = "message " + (isUser ? "user" : "bot");
+    msg.innerHTML = content.replace(/\n/g, '<br>');
 
+    // Layout left/right
     if (isUser) {
-        msgRow.appendChild(msgDiv);
-        msgRow.appendChild(avatar);
+        row.appendChild(meta);
+        row.appendChild(msg);
+        row.appendChild(avatar); 
     } else {
-        msgRow.appendChild(avatar);
-        msgRow.appendChild(msgDiv);
+        row.appendChild(avatar);
+        row.appendChild(msg);
+        row.appendChild(meta);
     }
 
-    chatMessages.appendChild(msgRow);
-
-    // Meta (timestamp)
-    if (metaText) {
-        const meta = document.createElement('div');
-        meta.className = 'message-meta';
-        meta.innerText = metaText;
-        msgRow.appendChild(meta);
-    }
-
+    chatMessages.appendChild(row);
     chatMessages.appendChild(messagesEndRef);
-    messagesEndRef.scrollIntoView({ behavior: 'smooth' });
-    return msgRow;
+    messagesEndRef.scrollIntoView({ behavior: "smooth" });
 }
 
-function showTyping() {
-    typingIndicator.style.display = 'block';
-    chatMessages.scrollTop = chatMessages.scrollHeight;
-}
-function hideTyping() {
-    typingIndicator.style.display = 'none';
-}
-
-function getCurrentDate() {
-    const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
-    return new Date().toLocaleDateString(undefined, options);
-}
-
-// Initial welcome message
+// ==== LOADING & WELCOME ====
 window.addEventListener('DOMContentLoaded', () => {
-    // Show date line
-    const dateRow = document.createElement('div');
-    dateRow.style.textAlign = "center";
-    dateRow.style.margin = "10px 0 15px 0";
-    dateRow.style.color = "#bbb";
-    dateRow.style.fontSize = "13px";
-    dateRow.innerText = getCurrentDate();
-    chatMessages.appendChild(dateRow);
-
-    // Welcome
-    createMessage(`<b>Welcome to WeBring AI Assistant</b><br>
-        I'm here to help you with<br>
-        <span style="color:#FFD600">digital solutions, apps, web development, and more.</span>
-        <br><br>How can I help you today?`, false);
+    renderDateRow();
+    createMessage(
+        `Great to hear that you are interested in purchasing hardware! Before proceed I would like to gather some information from you let's start`,
+        false, minutesAgo()
+    );
 });
 
 promptInput.addEventListener('input', function() {
     this.style.height = 'auto';
     this.style.height = Math.min(this.scrollHeight, 80) + 'px';
 });
-
 promptInput.addEventListener('keydown', function(e) {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -1020,10 +1036,14 @@ promptInput.addEventListener('keydown', function(e) {
 });
 sendButton.addEventListener('click', handleSubmit);
 
+function showTyping()   { typingIndicator.classList.add('active'); chatMessages.scrollTop = chatMessages.scrollHeight; }
+function hideTyping()   { typingIndicator.classList.remove('active'); }
+
+// ==== MAIN CHAT FLOW ====
 async function handleSubmit() {
     const prompt = promptInput.value.trim();
     if (!prompt) return;
-    createMessage(prompt, true);
+    createMessage(prompt, true, minutesAgo());
     promptInput.value = '';
     promptInput.style.height = 'auto';
     sendButton.disabled = true;
@@ -1035,13 +1055,10 @@ async function handleSubmit() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: prompt }) 
         });
-
         const data = await response.json();
-        // Show bot response
-        createMessage(data.response, false);
-
+        createMessage(data.response, false, minutesAgo());
     } catch (error) {
-        createMessage('Sorry, there was an error connecting to the server.', false);
+        createMessage('Sorry, there was an error connecting to the server.', false, minutesAgo());
     } finally {
         sendButton.disabled = false;
         hideTyping();
@@ -1051,6 +1068,7 @@ async function handleSubmit() {
 </script>
 </body>
 </html>
+
 
 <!-- 
 <!DOCTYPE html>
@@ -1531,7 +1549,7 @@ async function handleSubmit() {
     </div>
 </div>
 <!-- Modal -->
-<div class="modal" id="mainModal" tabindex="-1" aria-modal="true" role="dialog">
+<!-- <div class="modal" id="mainModal" tabindex="-1" aria-modal="true" role="dialog">
     <div class="modal-content" id="modalContent">
         <!-- Dynamic content -->
     </div>
@@ -1987,5 +2005,5 @@ window.openCateringModal = openCateringModal;
 window.addEventListener('load', () => { promptInput.focus(); renderWelcome(); });
 </script>
 </body>
-</html>
+</html> -->
  -->
